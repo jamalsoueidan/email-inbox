@@ -2,11 +2,13 @@ import { Table } from "convex-helpers/server";
 import { v } from "convex/values";
 
 export const Email = Table("emails", {
-  Date: v.optional(v.string()),
-  From: v.optional(v.string()),
-  FromName: v.optional(v.string()),
-  HtmlBody: v.optional(v.string()),
-  Subject: v.optional(v.string()),
-  TextBody: v.optional(v.string()),
-  Attachments: v.optional(v.array(v.any())),
+  Run: v.optional(v.boolean()),
+  RunAt: v.optional(v.number()),
+  Date: v.string(),
+  From: v.string(),
+  FromName: v.string(),
+  HtmlBody: v.string(),
+  Subject: v.string(),
+  TextBody: v.string(),
+  Attachments: v.array(v.any()),
 });

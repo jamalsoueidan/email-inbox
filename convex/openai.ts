@@ -1,115 +1,76 @@
+"use node";
 import { ConvexError, v } from "convex/values";
-
+import OpenAI from "openai";
+import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
 
-export const shortenMessage = internalAction({
-  args: {
-    content: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const { content } = args;
+if (!process.env.OPENAPI) {
+  throw new Error(
+    "Missing OPENAI in environment variables.\n" +
+      "Set it in the project settings in the Convex dashboard:\n" +
+      "    npx convex dashboard\n or https://dashboard.convex.dev"
+  );
+}
 
-    const response = await fetch(`https://api.openai.com/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAPI}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a helpful assistant that specializes in summarizing emails by removing greetings, signatures, and any polite but non-essential phrases. Focus on capturing only the critical information, such as meeting details, feedback, or action items, and rewrite from the sender’s perspective in a concise manner.",
-          },
-          { role: "user", content },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "response",
-            schema: {
-              type: "object",
-              properties: {
-                shortMessage: { type: "string" },
-              },
-              required: ["shortMessage"],
-            },
-          },
-        },
-      }),
-    });
-
-    const json: ChatGPTResponse = await response.json();
-
-    if (json.error) {
-      throw new ConvexError(json.error);
-    }
-
-    const pdf = JSON.parse(json.choices[0].message.content);
-
-    console.log(pdf);
-
-    return pdf;
-    /*await ctx.runMutation(internal.resumes.updateInternal, {
-      workExperiences: [],
-      educations: [],
-      socialProfiles: [],
-      socialProfilesVisible: false,
-      languages: [],
-      languagesVisible: false,
-      skills: [],
-      skillsVisible: false,
-      references: [],
-      referencesVisible: false,
-      courses: [],
-      coursesVisible: false,
-      internships: [],
-      internshipsVisible: false,
-      ...pdf,
-      _id: args.id,
-      userId: user || undefined,
-      title: "Imported from PDF",
-      template: {
-        name: "Aarhus",
-        color: "#ffe14c",
-        lineHeight: "1.5",
-        fontSize: "12",
-        fontFamily: "Arial",
-      },
-    });*/
+export const create = internalAction({
+  args: {},
+  handler: async () => {
+    const openai = new OpenAI({ apiKey: process.env.OPENAPI });
+    return openai.beta.threads.create({});
   },
 });
 
-interface ChatGPTResponse {
-  error?: string;
-  id: string;
-  object: string;
-  created: number;
-  model: string;
-  choices: Choice[];
-  usage: Usage;
-  system_fingerprint: string;
-}
-interface Usage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  completion_tokens_details: Completiontokensdetails;
-}
+export const run = internalAction({
+  args: {
+    emailId: v.id("emails"),
+  },
+  handler: async (ctx, args) => {
+    const email = await ctx.runQuery(internal.email.get, { _id: args.emailId });
+    if (!email?.From) {
+      throw new ConvexError("no email found");
+    }
 
-interface Completiontokensdetails {
-  reasoning_tokens: number;
-}
+    const conversation = await ctx.runQuery(internal.conversation.getByFrom, {
+      from: email?.From,
+    });
 
-interface Choice {
-  index: number;
-  message: Message;
-  finish_reason: string;
-}
+    if (!conversation) {
+      throw new ConvexError(`ignore this email ${email.From}`);
+    }
 
-interface Message {
-  role: string;
-  content: string;
-}
+    const openai = new OpenAI({ apiKey: process.env.OPENAPI });
+
+    await openai.beta.threads.messages.create(conversation.threadId, {
+      role: "user",
+      content: email.TextBody,
+    });
+
+    const stream = await openai.beta.threads.runs.stream(
+      conversation.threadId,
+      {
+        assistant_id: "asst_ealYafLJtsJkNM9LkK74PGly",
+      }
+    );
+
+    for await (const event of stream) {
+      if (event.event === "thread.message.completed") {
+        const content = event.data.content[0];
+        if (content.type === "text") {
+          const response = JSON.parse(content.text.value) as {
+            shortenEmail: string;
+            choices: Array<{
+              shortResponse: string;
+              longResponse: string;
+            }>;
+          };
+          await ctx.runMutation(internal.message.create, {
+            shortenEmail: response.shortenEmail,
+            choices: response.choices,
+            email: args.emailId,
+            conversation: conversation._id,
+          });
+        }
+      }
+    }
+  },
+});

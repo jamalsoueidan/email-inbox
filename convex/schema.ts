@@ -5,6 +5,6 @@ import { Message } from "./tables/message";
 
 export default defineSchema({
   emails: Email.table,
-  conversation: Conversation.table,
-  message: Message.table,
+  conversations: Conversation.table.index("byFrom", ["from"]),
+  messages: Message.table,
 });

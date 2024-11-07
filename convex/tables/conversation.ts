@@ -5,4 +5,5 @@ export const Conversation = Table("conversations", {
   from: v.string(),
   fromName: v.string(),
   lastDate: v.number(),
+  threadId: v.string(),
 });
