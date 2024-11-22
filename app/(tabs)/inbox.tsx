@@ -10,7 +10,7 @@ import {
 import { usePaginatedQuery } from "convex/react";
 import { FunctionReturnType } from "convex/server";
 import { useRouter } from "expo-router";
-import React, { useCallback, useMemo, useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -31,7 +31,6 @@ const Item = ({
 }) => {
   const router = useRouter();
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["60%"], []); // Adjust snap point to fill 50% of screen height
 
   const openBottomSheet = () => {
     bottomSheetModalRef.current?.present();
@@ -82,22 +81,26 @@ const Item = ({
       <BottomSheetModal
         ref={bottomSheetModalRef}
         index={0}
-        snapPoints={snapPoints}
-        keyboardBehavior="fillParent"
+        snapPoints={["50%"]}
+        handleComponent={null}
         backdropComponent={renderBackdrop}
-        enableDynamicSizing={false}
         enableOverDrag={false}
+        enableContentPanningGesture={false}
+        enableDismissOnClose
+        enableDynamicSizing={false}
       >
         <BottomSheetView style={styles.actionSheetContent}>
           <Text style={styles.modalSubject}>
             {data.email.fromName || data.email.from}
           </Text>
           <Text style={styles.modalSubject}>{data.email.subject}</Text>
+
           <BottomSheetScrollView style={styles.scrollView}>
             <Text style={styles.modalBody}>
               {cleanTextBody(data.email.textBody) || "No body"}
             </Text>
           </BottomSheetScrollView>
+
           <View style={styles.buttonContainer}>
             <Pressable
               style={[styles.button, { backgroundColor: "#4CAF50" }]}
@@ -207,6 +210,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   actionSheetContent: {
+    flex: 1,
     padding: 20,
   },
   modalSubject: {
@@ -217,12 +221,10 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     fontSize: 14,
-    marginBottom: 16,
     color: "#555",
   },
   scrollView: {
-    height: 270,
-    marginBottom: 20,
+    marginBottom: 8,
   },
   buttonContainer: {
     flexDirection: "row",

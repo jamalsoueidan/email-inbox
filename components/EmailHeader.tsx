@@ -1,7 +1,8 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ThemedText } from "./ThemedText";
 
 export const EmailHeader = ({ id }: { id: string }) => {
   const collection = useQuery(api.collection.get, {
@@ -14,7 +15,9 @@ export const EmailHeader = ({ id }: { id: string }) => {
 
   return (
     <View style={styles.headerContainer}>
-      <Text style={styles.headerText}>{collection.name || "No Name"}</Text>
+      <ThemedText style={styles.headerText}>
+        {collection.name || "No Name"}
+      </ThemedText>
     </View>
   );
 };
