@@ -2,6 +2,7 @@ import { pick } from "convex-helpers";
 import { httpRouter } from "convex/server";
 import ms from "ms";
 import { internal } from "./_generated/api";
+import { Doc } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import { Email } from "./tables/emails";
 
@@ -41,7 +42,7 @@ http.route({
       },
     ];*/
 
-    const body: any = lowercaseKeys(await request.json());
+    const body: Doc<"emails"> = lowercaseKeys(await request.json());
 
     console.log(body);
 
@@ -55,6 +56,14 @@ http.route({
         { ...body, nickname, domain, date: date.getTime() },
         keys as any
       ) as any
+    );
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.collection.ensureCollectionForEmail,
+      {
+        emailId,
+      }
     );
 
     await ctx.scheduler.runAfter(0, internal.email.runEmailMissingTextBody, {

@@ -1,5 +1,4 @@
 import { api } from "@/convex/_generated/api";
-import { Doc } from "@/convex/_generated/dataModel";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
   BottomSheetBackdrop,
@@ -10,6 +9,7 @@ import {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { usePaginatedQuery } from "convex/react";
+import { FunctionReturnType } from "convex/server";
 import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useRef } from "react";
 import {
@@ -25,7 +25,11 @@ function cleanTextBody(text: string): string {
   return text.replace(/(\r?\n|\r|\s*\n\s*)+/g, "\n").trim();
 }
 
-const Item = ({ data }: { data: Doc<"emails"> }) => {
+const Item = ({
+  data,
+}: {
+  data: FunctionReturnType<typeof api.collection.list>["page"][0];
+}) => {
   const router = useRouter();
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["60%"], []); // Adjust snap point to fill 50% of screen height
@@ -51,27 +55,27 @@ const Item = ({ data }: { data: Doc<"emails"> }) => {
       <TouchableOpacity
         style={[
           styles.container,
-          { backgroundColor: data.markedAsRead ? "#f9f9f9" : "#e6f7ff" },
+          { backgroundColor: data.email.markedAsRead ? "#f9f9f9" : "#e6f7ff" },
         ]}
         onPress={openBottomSheet}
       >
         <View style={styles.header}>
           <Text style={styles.fromName}>
-            {data.fromName}{" "}
-            {data.textBodyRun ? (
+            {data.email.fromName}{" "}
+            {data.email.textBodyRun ? (
               <MaterialIcons name="check-circle" size={16} color="green" />
             ) : null}
           </Text>
           <Text style={styles.date}>
-            {new Date(data.date).toLocaleDateString()}
+            {new Date(data.email.date).toLocaleDateString()}
           </Text>
         </View>
         <Text style={styles.subject} numberOfLines={1}>
-          {data.subject}
+          {data.email.subject}
         </Text>
         <View style={styles.footer}>
           <Text style={styles.bodyPreview} numberOfLines={2}>
-            {cleanTextBody(data.textBody) || "No body"}
+            {cleanTextBody(data.email.textBody) || "No body"}
           </Text>
         </View>
       </TouchableOpacity>
@@ -86,11 +90,11 @@ const Item = ({ data }: { data: Doc<"emails"> }) => {
         enablePanDownToClose
       >
         <BottomSheetView style={styles.actionSheetContent}>
-          <Text style={styles.modalSubject}>{data.fromName}</Text>
-          <Text style={styles.modalSubject}>{data.subject}</Text>
+          <Text style={styles.modalSubject}>{data.email.fromName}</Text>
+          <Text style={styles.modalSubject}>{data.email.subject}</Text>
           <BottomSheetScrollView style={styles.scrollView}>
             <Text style={styles.modalBody}>
-              {cleanTextBody(data.textBody) || "No body"}
+              {cleanTextBody(data.email.textBody) || "No body"}
             </Text>
           </BottomSheetScrollView>
           <View style={styles.buttonContainer}>
@@ -99,7 +103,7 @@ const Item = ({ data }: { data: Doc<"emails"> }) => {
               onPress={() =>
                 router.push({
                   pathname: "/email/[id]",
-                  params: { id: data._id, fromName: data.from },
+                  params: { id: data._id, fromName: data.email.from },
                 })
               }
             >
@@ -120,7 +124,7 @@ const Item = ({ data }: { data: Doc<"emails"> }) => {
 
 export default function Inbox() {
   const { results, status, loadMore } = usePaginatedQuery(
-    api.email.list,
+    api.collection.list,
     {},
     { initialNumItems: 15 }
   );

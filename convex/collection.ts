@@ -1,7 +1,14 @@
+import { asyncMap, pick } from "convex-helpers";
 import { filter } from "convex-helpers/server/filter";
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
-import { internalMutation, query } from "./_generated/server";
+import { ConvexError, v } from "convex/values";
+import { internal } from "./_generated/api";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  query,
+} from "./_generated/server";
 import { Collection } from "./tables/collections";
 
 export const create = internalMutation({
@@ -10,21 +17,89 @@ export const create = internalMutation({
 });
 
 export const list = query({
-  args: { from: v.string() },
-  handler: (ctx, args) => {
-    return ctx.db
-      .query("emails")
-      .withSearchIndex("search_from", (q) => q.search("from", args.from))
-      .take(30);
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    const collections = await ctx.db
+      .query("collections")
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    const page = await asyncMap(collections.page, async (c) => {
+      const email = await ctx.db.get(c.lastEmail);
+      if (!email) {
+        throw new ConvexError(`No email found for ${c._id} collection`);
+      }
+      const fields = pick(email, [
+        "fromName",
+        "from",
+        "textBodyRun",
+        "subject",
+        "textBody",
+        "date",
+        "markedAsRead",
+      ]);
+
+      return {
+        ...c,
+        email: fields,
+      };
+    });
+
+    return {
+      ...collections,
+      page,
+    };
   },
 });
 
-export const search = query({
-  args: { from: v.string(), paginationOpts: paginationOptsValidator },
+export const search = internalQuery({
+  args: { from: v.string() },
   handler: async (ctx, args) => {
-    return filter(ctx.db.query("emails"), (post) => {
-      console.log(post.from, args.from);
-      return post.from === args.from;
-    }).paginate(args.paginationOpts);
+    const domain = args.from.split("@")[1];
+    return filter(
+      ctx.db.query("collections"),
+      (post) => post.emails.includes(args.from) || post.emails.includes(domain)
+    ).take(10);
   },
+});
+
+export const ensureCollectionForEmail = internalAction({
+  args: { emailId: v.id("emails") },
+  handler: async (ctx, args) => {
+    const email = await ctx.runQuery(internal.email.get, { _id: args.emailId });
+
+    const collections = await ctx.runQuery(internal.collection.search, {
+      from: email.from,
+    });
+
+    if (!collections.length) {
+      await ctx.runMutation(internal.collection.create, {
+        name: email.fromName,
+        emails: [email.from],
+        lastEmail: args.emailId,
+        lastUpdated: Date.now(),
+      });
+    } else {
+      await Promise.all(
+        collections.map((c) =>
+          ctx.runMutation(internal.collection.update, {
+            id: c._id,
+            lastEmail: args.emailId,
+          })
+        )
+      );
+    }
+  },
+});
+
+export const update = internalMutation({
+  args: {
+    id: v.id("collections"),
+    lastEmail: v.id("emails"),
+  },
+  handler: async (ctx, args) =>
+    ctx.db.patch(args.id, {
+      lastEmail: args.lastEmail,
+      lastUpdated: Date.now(),
+    }),
 });

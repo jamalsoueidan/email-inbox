@@ -10,5 +10,5 @@ export default defineSchema({
     .searchIndex("search_from", { searchField: "from" }),
   conversations: Conversation.table.index("byFrom", ["from"]),
   messages: Message.table.index("byConversation", ["conversation"]),
-  collections: Collection.table.index("byLastUpdate", ["lastUpdated"]),
+  collections: Collection.table.index("byEmails", ["emails"]),
 });
