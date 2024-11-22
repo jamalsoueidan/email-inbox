@@ -28,7 +28,7 @@ function cleanTextBody(text: string): string {
 const Item = ({ data }: { data: Doc<"emails"> }) => {
   const router = useRouter();
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["50%"], []); // Adjust snap point to fill 50% of screen height
+  const snapPoints = useMemo(() => ["60%"], []); // Adjust snap point to fill 50% of screen height
 
   const openBottomSheet = () => {
     bottomSheetModalRef.current?.present();
@@ -51,27 +51,27 @@ const Item = ({ data }: { data: Doc<"emails"> }) => {
       <TouchableOpacity
         style={[
           styles.container,
-          { backgroundColor: data.Read ? "#f9f9f9" : "#e6f7ff" },
+          { backgroundColor: data.markedAsRead ? "#f9f9f9" : "#e6f7ff" },
         ]}
         onPress={openBottomSheet}
       >
         <View style={styles.header}>
           <Text style={styles.fromName}>
-            {data.FromName}{" "}
-            {data.TextBodyRun ? (
+            {data.fromName}{" "}
+            {data.textBodyRun ? (
               <MaterialIcons name="check-circle" size={16} color="green" />
             ) : null}
           </Text>
           <Text style={styles.date}>
-            {new Date(data.Date).toLocaleDateString()}
+            {new Date(data.date).toLocaleDateString()}
           </Text>
         </View>
         <Text style={styles.subject} numberOfLines={1}>
-          {data.Subject}
+          {data.subject}
         </Text>
         <View style={styles.footer}>
           <Text style={styles.bodyPreview} numberOfLines={2}>
-            {cleanTextBody(data.TextBody) || "No body"}
+            {cleanTextBody(data.textBody) || "No body"}
           </Text>
         </View>
       </TouchableOpacity>
@@ -86,11 +86,11 @@ const Item = ({ data }: { data: Doc<"emails"> }) => {
         enablePanDownToClose
       >
         <BottomSheetView style={styles.actionSheetContent}>
-          <Text style={styles.modalSubject}>{data.FromName}</Text>
-          <Text style={styles.modalSubject}>{data.Subject}</Text>
+          <Text style={styles.modalSubject}>{data.fromName}</Text>
+          <Text style={styles.modalSubject}>{data.subject}</Text>
           <BottomSheetScrollView style={styles.scrollView}>
             <Text style={styles.modalBody}>
-              {cleanTextBody(data.TextBody) || "No body"}
+              {cleanTextBody(data.textBody) || "No body"}
             </Text>
           </BottomSheetScrollView>
           <View style={styles.buttonContainer}>
@@ -99,7 +99,7 @@ const Item = ({ data }: { data: Doc<"emails"> }) => {
               onPress={() =>
                 router.push({
                   pathname: "/email/[id]",
-                  params: { id: data._id, fromName: data.From },
+                  params: { id: data._id, fromName: data.from },
                 })
               }
             >
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   scrollView: {
-    height: 250,
+    height: 320,
     marginBottom: 10,
   },
   buttonContainer: {

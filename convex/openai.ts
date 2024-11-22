@@ -26,25 +26,25 @@ export const runEmail2Message = internalAction({
   },
   handler: async (ctx, args) => {
     const email = await ctx.runQuery(internal.email.get, { _id: args.emailId });
-    if (!email?.From) {
+    if (!email?.from) {
       throw new ConvexError("no email found");
     }
 
     const conversation = await ctx.runQuery(internal.conversation.getByFrom, {
-      from: email?.From,
+      from: email?.from,
     });
 
     if (!conversation) {
-      console.log(`ignore this email ${email.From}`);
+      console.log(`ignore this email ${email.from}`);
       return;
     }
 
-    let content: string = email.TextBody;
+    let content: string = email.textBody;
 
-    if (!email.TextBodyRun) {
+    if (!email.textBodyRun) {
       // run openai to remove any replies in the text body
       content = await ctx.runAction(internal.openai.runEmailHtml2Text, {
-        htmlBody: email.TextBody,
+        htmlBody: email.textBody,
       });
     }
 

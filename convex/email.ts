@@ -25,7 +25,9 @@ export const list = query({
 
 export const create = internalMutation({
   args: Email.withoutSystemFields,
-  handler: async (ctx, args) => ctx.db.insert("emails", args),
+  handler: async (ctx, args) => {
+    return ctx.db.insert("emails", args);
+  },
 });
 
 export const getAllEmails = internalQuery({
@@ -33,7 +35,7 @@ export const getAllEmails = internalQuery({
   handler: async (ctx, args) =>
     ctx.db
       .query("emails")
-      .withIndex("byFrom", (q) => q.eq("From", args.from))
+      .withIndex("byFrom", (q) => q.eq("from", args.from))
       .collect(),
 });
 
@@ -60,21 +62,21 @@ export const addEmailToConversation = action({
     const email = await ctx.runQuery(internal.email.get, { _id: args.emailId });
 
     const conversation = await ctx.runQuery(internal.conversation.getByFrom, {
-      from: email.From,
+      from: email.from,
     });
 
     if (!conversation) {
       const threadId = await ctx.runAction(internal.openai.create);
 
       await ctx.runMutation(internal.conversation.create, {
-        from: email.From,
-        fromName: email.FromName,
+        from: email.from,
+        fromName: email.fromName,
         lastDate: Date.now(),
         threadId: threadId.id,
       });
 
       await ctx.scheduler.runAfter(0, internal.email.runAllEmails, {
-        from: email.From,
+        from: email.from,
       });
     }
   },
@@ -86,8 +88,8 @@ export const finishedRun = internalMutation({
   },
   handler: async (ctx, args) => {
     ctx.db.patch(args.emailId, {
-      Run: true,
-      RunAt: Date.now(),
+      shortenMsgRun: true,
+      shortenMsgRunAt: Date.now(),
     });
   },
 });
@@ -99,9 +101,9 @@ export const updateTextBody = internalMutation({
   },
   handler: async (ctx, args) => {
     ctx.db.patch(args.emailId, {
-      TextBody: args.textBody,
-      TextBodyRun: true,
-      TextBodyRunAt: Date.now(),
+      textBody: args.textBody,
+      textBodyRun: true,
+      textBodyRunAt: Date.now(),
     });
   },
 });
@@ -114,19 +116,19 @@ export const runEmailMissingTextBody = internalAction({
     const email: Doc<"emails"> = await ctx.runQuery(internal.email.get, {
       _id: args.emailId,
     });
-    if (!email?.From) {
+    if (!email?.from) {
       throw new ConvexError("No email found");
     }
 
-    if (email?.TextBody || email?.TextBodyRun) {
-      console.log(`Already have textBody ${email.From}`);
+    if (email?.textBody || email?.textBodyRun) {
+      console.log(`Already have textBody ${email.from}`);
       return;
     }
 
     const textBody: string = await ctx.runAction(
       internal.openai.runEmailHtml2Text,
       {
-        htmlBody: email.HtmlBody,
+        htmlBody: email.htmlBody,
       }
     );
 

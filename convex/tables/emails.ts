@@ -2,16 +2,27 @@ import { Table } from "convex-helpers/server";
 import { v } from "convex/values";
 
 export const Email = Table("emails", {
-  Run: v.optional(v.boolean()),
-  RunAt: v.optional(v.number()),
-  Date: v.string(),
-  From: v.string(),
-  FromName: v.string(),
-  HtmlBody: v.string(),
-  Subject: v.string(),
-  TextBody: v.string(),
-  TextBodyRun: v.optional(v.boolean()),
-  TextBodyRunAt: v.optional(v.number()),
-  Attachments: v.array(v.any()),
-  Read: v.optional(v.boolean()),
+  date: v.number(),
+
+  //custom fields:
+  shortenMsgRun: v.optional(v.boolean()),
+  shortenMsgRunAt: v.optional(v.number()), // if we have
+  markedAsRead: v.optional(v.boolean()),
+  textBodyRun: v.optional(v.boolean()),
+  textBodyRunAt: v.optional(v.number()),
+  nickname: v.string(), // email nickname@
+  domain: v.string(), // email @domain.com
+  fromName: v.string(), // email full name
+  from: v.string(), // email nickname@domain.com
+  toFull: v.array(
+    v.object({
+      name: v.string(),
+      email: v.string(),
+      mailboxHash: v.string(),
+    })
+  ),
+  htmlBody: v.string(),
+  subject: v.string(),
+  textBody: v.string(),
+  attachments: v.array(v.any()),
 });
