@@ -4,7 +4,6 @@ import {
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
   BottomSheetModal,
-  BottomSheetModalProvider,
   BottomSheetScrollView,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
@@ -61,7 +60,7 @@ const Item = ({
       >
         <View style={styles.header}>
           <Text style={styles.fromName}>
-            {data.email.fromName}{" "}
+            {data.email.fromName || data.email.from}{" "}
             {data.email.textBodyRun ? (
               <MaterialIcons name="check-circle" size={16} color="green" />
             ) : null}
@@ -87,10 +86,12 @@ const Item = ({
         keyboardBehavior="fillParent"
         backdropComponent={renderBackdrop}
         enableDynamicSizing={false}
-        enablePanDownToClose
+        enableOverDrag={false}
       >
         <BottomSheetView style={styles.actionSheetContent}>
-          <Text style={styles.modalSubject}>{data.email.fromName}</Text>
+          <Text style={styles.modalSubject}>
+            {data.email.fromName || data.email.from}
+          </Text>
           <Text style={styles.modalSubject}>{data.email.subject}</Text>
           <BottomSheetScrollView style={styles.scrollView}>
             <Text style={styles.modalBody}>
@@ -100,20 +101,27 @@ const Item = ({
           <View style={styles.buttonContainer}>
             <Pressable
               style={[styles.button, { backgroundColor: "#4CAF50" }]}
-              onPress={() =>
+              onPress={() => {
+                bottomSheetModalRef.current?.close();
                 router.push({
-                  pathname: "/email/[id]",
-                  params: { id: data._id, fromName: data.email.from },
-                })
-              }
+                  pathname: `/email/[id]`,
+                  params: { id: data._id },
+                });
+              }}
             >
               <Text style={styles.buttonText}>Reply</Text>
             </Pressable>
             <Pressable
               style={[styles.button, { backgroundColor: "#FFC107" }]}
-              onPress={() => console.log("Mark as Read")}
+              onPress={() => {
+                bottomSheetModalRef.current?.close();
+                router.push({
+                  pathname: `/email/[id]`,
+                  params: { id: data._id },
+                });
+              }}
             >
-              <Text style={styles.buttonText}>Mark as Read</Text>
+              <Text style={styles.buttonText}>Open</Text>
             </Pressable>
           </View>
         </BottomSheetView>
@@ -136,22 +144,20 @@ export default function Inbox() {
   };
 
   return (
-    <BottomSheetModalProvider>
-      <FlatList
-        data={results}
-        renderItem={({ item }) => <Item data={item} />}
-        keyExtractor={(item) => item._id}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          status === "LoadingFirstPage" || status === "LoadingMore" ? (
-            <View style={pageStyles.loader}>
-              <ActivityIndicator size="small" color="#0000ff" />
-            </View>
-          ) : null
-        }
-      />
-    </BottomSheetModalProvider>
+    <FlatList
+      data={results}
+      renderItem={({ item }) => <Item data={item} />}
+      keyExtractor={(item) => item._id}
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={
+        status === "LoadingFirstPage" || status === "LoadingMore" ? (
+          <View style={pageStyles.loader}>
+            <ActivityIndicator size="small" color="#0000ff" />
+          </View>
+        ) : null
+      }
+    />
   );
 }
 
@@ -215,8 +221,8 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   scrollView: {
-    height: 320,
-    marginBottom: 10,
+    height: 270,
+    marginBottom: 20,
   },
   buttonContainer: {
     flexDirection: "row",

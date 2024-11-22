@@ -52,6 +52,55 @@ export const list = query({
   },
 });
 
+export const get = query({
+  args: { id: v.id("collections") },
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.id);
+
+    if (!collection) {
+      throw new ConvexError("collection not exist");
+    }
+
+    const email = await ctx.db.get(collection.lastEmail);
+    return {
+      ...collection,
+      email,
+    };
+  },
+});
+
+export const paginate = query({
+  args: {
+    id: v.id("collections"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.id);
+
+    if (!collection) {
+      throw new ConvexError("collection not exist");
+    }
+
+    const email = await ctx.db
+      .query("emails")
+      .filter((q) => {
+        const emailConditions = collection.emails.map((email) =>
+          q.eq(q.field("from"), email)
+        );
+
+        const emailDomain = collection.emails.map((email) =>
+          q.eq(q.field("domain"), email)
+        );
+
+        return q.or(...emailConditions, ...emailDomain);
+      })
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    return email;
+  },
+});
+
 export const search = internalQuery({
   args: { from: v.string() },
   handler: async (ctx, args) => {
@@ -74,7 +123,7 @@ export const ensureCollectionForEmail = internalAction({
 
     if (!collections.length) {
       await ctx.runMutation(internal.collection.create, {
-        name: email.fromName,
+        name: email.fromName || email.from,
         emails: [email.from],
         lastEmail: args.emailId,
         lastUpdated: Date.now(),

@@ -1,4 +1,7 @@
+import { EmailHeader } from "@/components/EmailHeader";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { Ionicons } from "@expo/vector-icons";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import {
   DarkTheme,
   DefaultTheme,
@@ -10,6 +13,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { TouchableOpacity } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
@@ -38,31 +42,55 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ConvexProvider client={convex}>
-        <ThemeProvider
-          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
-          <Stack
-            screenOptions={({ route }) => {
-              if (route.name === "conversation/[id]") {
-                console.log(route.params);
-                return {
-                  headerShown: true,
-                  title: `${route.params?.fromName || "Unknown"}`, // Custom title
-                };
-              }
-
-              return {
-                headerShown: false, // Default behavior
-              };
-            }}
+      <BottomSheetModalProvider>
+        <ConvexProvider client={convex}>
+          <ThemeProvider
+            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
           >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </ConvexProvider>
+            <Stack
+              screenOptions={({ route }) => {
+                if (route.name === "conversation/[id]") {
+                  console.log(route.params);
+                  return {
+                    headerShown: true,
+                    title: `${route.params?.fromName || "Unknown"}`,
+                  };
+                }
+
+                if (route.name === "email/[id]") {
+                  const { id } = route.params as {
+                    id: string;
+                  };
+                  return {
+                    headerShown: true,
+                    headerLeft: undefined,
+                    headerTitle: () => <EmailHeader id={id} />,
+                    headerRight: () => (
+                      <TouchableOpacity
+                        onPress={() => console.log("Settings pressed")}
+                      >
+                        <Ionicons
+                          name="settings-outline"
+                          size={24}
+                          color="blue"
+                        />
+                      </TouchableOpacity>
+                    ),
+                  };
+                }
+
+                return {
+                  headerShown: false,
+                };
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </ConvexProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }

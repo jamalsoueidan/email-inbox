@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "npm-run-all dev:init --parallel dev:backend dev:frontend",
     "dev:init": "convex dev --until-success",
-    "dev:frontend": "expo start --web",
+    "dev:frontend": "expo start",
     "dev:backend": "convex dev",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -34,7 +34,7 @@
     "expo-font": "~13.0.1",
     "expo-haptics": "~14.0.0",
     "expo-linking": "~7.0.3",
-    "expo-router": "~4.0.7",
+    "expo-router": "~4.0.8",
     "expo-splash-screen": "~0.29.13",
     "expo-status-bar": "~2.0.0",
     "expo-symbols": "~0.2.0",
