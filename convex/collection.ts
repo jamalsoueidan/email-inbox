@@ -37,6 +37,7 @@ export const list = query({
         "textBody",
         "date",
         "markedAsRead",
+        "htmlBody",
       ]);
 
       return {

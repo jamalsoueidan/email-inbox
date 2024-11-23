@@ -1,83 +1,18 @@
+import { RenderHTML } from "@/components/RenderHTML";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { MaterialIcons } from "@expo/vector-icons";
-import {
-  BottomSheetBackdrop,
-  BottomSheetBackdropProps,
-  BottomSheetModal,
-} from "@gorhom/bottom-sheet";
 import { usePaginatedQuery } from "convex/react";
 import { FunctionReturnType } from "convex/server";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useMemo, useRef } from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { FlatList } from "react-native-gesture-handler";
-function cleanTextBody(text: string): string {
-  return text.replace(/(\r?\n|\r|\s*\n\s*)+/g, "\n").trim();
-}
 
 const Item = ({
   data,
 }: {
   data: FunctionReturnType<typeof api.collection.paginate>["page"][0];
 }) => {
-  const router = useRouter();
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["60%"], []); // Adjust snap point to fill 50% of screen height
-
-  const openBottomSheet = () => {
-    bottomSheetModalRef.current?.present();
-  };
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={1}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
-
-  return (
-    <>
-      <TouchableOpacity
-        style={[
-          styles.container,
-          { backgroundColor: data.markedAsRead ? "#f9f9f9" : "#e6f7ff" },
-        ]}
-        onPress={openBottomSheet}
-      >
-        <View style={styles.header}>
-          <Text style={styles.fromName}>
-            {data.fromName || data.from}{" "}
-            {data.textBodyRun ? (
-              <MaterialIcons name="check-circle" size={16} color="green" />
-            ) : null}
-          </Text>
-          <Text style={styles.date}>
-            {new Date(data.date).toLocaleDateString()}
-          </Text>
-        </View>
-        <Text style={styles.subject} numberOfLines={1}>
-          {data.subject}
-        </Text>
-        <View style={styles.footer}>
-          <Text style={styles.bodyPreview} numberOfLines={2}>
-            {cleanTextBody(data.textBody) || "No body"}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    </>
-  );
+  return <RenderHTML body={data.htmlBody} />;
 };
 
 export default function Email() {
@@ -145,11 +80,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#555",
     marginBottom: 8,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   bodyPreview: {
     fontSize: 12,

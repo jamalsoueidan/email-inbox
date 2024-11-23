@@ -1,10 +1,10 @@
+import { RenderHTML } from "@/components/RenderHTML";
 import { api } from "@/convex/_generated/api";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
   BottomSheetModal,
-  BottomSheetScrollView,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { usePaginatedQuery } from "convex/react";
@@ -17,11 +17,18 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { FlatList } from "react-native-gesture-handler";
+
 function cleanTextBody(text: string): string {
   return text.replace(/(\r?\n|\r|\s*\n\s*)+/g, "\n").trim();
+}
+
+function preprocessHTML(html: string): string {
+  // Replace font-size: 0 with a default font size
+  return html.replace(/font-size:\s*0[^;]*;/g, "font-size: 16px;");
 }
 
 const Item = ({
@@ -29,6 +36,7 @@ const Item = ({
 }: {
   data: FunctionReturnType<typeof api.collection.list>["page"][0];
 }) => {
+  const { width } = useWindowDimensions();
   const router = useRouter();
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
@@ -81,7 +89,7 @@ const Item = ({
       <BottomSheetModal
         ref={bottomSheetModalRef}
         index={0}
-        snapPoints={["50%"]}
+        snapPoints={["75%"]}
         handleComponent={null}
         backdropComponent={renderBackdrop}
         enableOverDrag={false}
@@ -95,11 +103,7 @@ const Item = ({
           </Text>
           <Text style={styles.modalSubject}>{data.email.subject}</Text>
 
-          <BottomSheetScrollView style={styles.scrollView}>
-            <Text style={styles.modalBody}>
-              {cleanTextBody(data.email.textBody) || "No body"}
-            </Text>
-          </BottomSheetScrollView>
+          <RenderHTML body={data.email.htmlBody} enableScrollView />
 
           <View style={styles.buttonContainer}>
             <Pressable
