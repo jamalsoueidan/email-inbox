@@ -35,7 +35,9 @@ export const runEmail2Message = internalAction({
     });
 
     if (!conversation) {
-      console.log(`ignore this email ${email.from}`);
+      console.log(
+        `Not part of conversation ${email.from}, dont convert to msg`
+      );
       return;
     }
 

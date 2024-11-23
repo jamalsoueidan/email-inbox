@@ -1,6 +1,5 @@
 import { pick } from "convex-helpers";
 import { httpRouter } from "convex/server";
-import ms from "ms";
 import { internal } from "./_generated/api";
 import { Doc } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
@@ -66,12 +65,14 @@ http.route({
       }
     );
 
+    /*
+    we are just rendering the HTML for now in the app
     await ctx.scheduler.runAfter(0, internal.email.runEmailMissingTextBody, {
       emailId,
     });
 
-    const seconds = ms(`${15}s`);
-    await ctx.scheduler.runAfter(seconds, internal.openai.runEmail2Message, {
+    const seconds = ms(`${15}s`);*/
+    await ctx.scheduler.runAfter(0, internal.openai.runEmail2Message, {
       emailId,
     });
 
