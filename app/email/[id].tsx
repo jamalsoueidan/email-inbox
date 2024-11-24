@@ -1,10 +1,22 @@
 import { RenderHTML } from "@/components/RenderHTML";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { usePaginatedQuery } from "convex/react";
 import { FunctionReturnType } from "convex/server";
 import { useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import Collapsible from "react-native-collapsible";
+
 import { FlatList } from "react-native-gesture-handler";
 
 const Item = ({
@@ -12,7 +24,56 @@ const Item = ({
 }: {
   data: FunctionReturnType<typeof api.collection.paginate>["page"][0];
 }) => {
-  return <RenderHTML body={data.htmlBody} />;
+  const dimensions = useWindowDimensions();
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
+  console.log(dimensions);
+  return (
+    <ThemedView style={[styles.emailContainer]}>
+      <ThemedView
+        style={[styles.emailHeader, isCollapsed && styles.emailHeaderNoBorder]}
+      >
+        <ThemedView style={{ flex: 1 }}>
+          <ThemedText style={styles.emailSubject}>{data.subject}</ThemedText>
+          <ThemedText style={styles.emailDate}>
+            {new Date(data.date).toLocaleDateString()}{" "}
+            {new Date(data.date).toLocaleTimeString()}
+          </ThemedText>
+        </ThemedView>
+        <TouchableOpacity
+          onPress={() => setIsCollapsed(!isCollapsed)}
+          style={styles.collapseButton}
+        >
+          <ThemedText style={styles.collapseButtonText}>
+            {isCollapsed ? "Show More" : "Show Less"}
+          </ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+
+      {data.attachments.length > 0 && (
+        <View style={styles.attachmentsContainer}>
+          <Text style={styles.attachmentsHeader}>Attachments:</Text>
+          {data.attachments.map((attachment, index) => (
+            <Text key={index} style={styles.attachmentItem}>
+              {attachment.name || `Attachment ${index + 1}`}
+            </Text>
+          ))}
+        </View>
+      )}
+
+      <Collapsible
+        collapsed={isCollapsed}
+        style={[
+          {
+            height: dimensions.height - 200,
+          },
+          styles.emailHeaderNoBorder,
+        ]}
+      >
+        <RenderHTML body={data.htmlBody} />
+      </Collapsible>
+    </ThemedView>
+  );
 };
 
 export default function Email() {
@@ -56,68 +117,56 @@ const pageStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  fromName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  date: {
-    fontSize: 12,
-    color: "#777",
-  },
-  subject: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 8,
-  },
-  bodyPreview: {
-    fontSize: 12,
-    color: "#777",
-    flex: 1,
-    marginRight: 10,
-  },
-  actionSheetContent: {
-    padding: 20,
-  },
-  modalSubject: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: "#333",
-  },
-  modalBody: {
-    fontSize: 14,
-    marginBottom: 16,
-    color: "#555",
-  },
-  scrollView: {
-    height: 390,
-    marginBottom: 20,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 10,
-    marginHorizontal: 5,
+  emailContainer: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    margin: 10,
     borderRadius: 8,
-    alignItems: "center",
   },
-  buttonText: {
-    color: "#fff",
+  emailHeader: {
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 10,
+    borderBottomColor: "#ccc",
+    borderBottomWidth: 1,
+  },
+  emailHeaderNoBorder: {
+    borderBottomWidth: 0, // Remove the border when collapsed
+    borderBottomRightRadius: 8,
+    borderBottomLeftRadius: 8,
+  },
+  emailDate: {
+    fontSize: 12,
+  },
+  emailSubject: {
+    fontSize: 18,
+    fontWeight: "600",
+
+    flexWrap: "wrap", // Allow wrapping
+    flex: 1,
+  },
+  attachmentsContainer: {
+    marginTop: 15,
+  },
+  attachmentsHeader: {
+    fontSize: 14,
     fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
+  },
+  attachmentItem: {
+    fontSize: 14,
+    color: "#007BFF",
+  },
+  collapseButton: {
+    paddingRight: 10,
+  },
+  collapseButtonText: {
+    color: "#007BFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

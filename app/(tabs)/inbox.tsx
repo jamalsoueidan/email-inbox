@@ -103,7 +103,7 @@ const Item = ({
           </Text>
           <Text style={styles.modalSubject}>{data.email.subject}</Text>
 
-          <RenderHTML body={data.email.htmlBody} enableScrollView />
+          <RenderHTML body={data.email.htmlBody} inModal withRadius={false} />
 
           <View style={styles.buttonContainer}>
             <Pressable

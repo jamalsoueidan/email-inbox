@@ -1,15 +1,17 @@
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { Platform, StyleSheet } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import { WebView } from "react-native-webview"; // For mobile devices
+import { WebView } from "react-native-webview";
 import sanitizeHtml from "sanitize-html";
 
 export function RenderHTML({
   body,
-  enableScrollView = false,
+  inModal = false,
+  withRadius = true,
 }: {
   body: string;
-  enableScrollView?: boolean;
+  withRadius?: boolean;
+  inModal?: boolean;
 }) {
   // Sanitize the HTML content
   const sanitizedHtml = sanitizeHtml(body, {
@@ -21,9 +23,9 @@ export function RenderHTML({
   });
 
   // Web rendering using sanitized HTML
-  if (Platform.OS === "web" && enableScrollView) {
+  if (Platform.OS === "web" && inModal) {
     return (
-      <BottomSheetScrollView style={styles.scrollView}>
+      <BottomSheetScrollView style={[withRadius && styles.radius]}>
         <div
           style={styles.webContainer}
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
@@ -32,9 +34,9 @@ export function RenderHTML({
     );
   }
 
-  if (Platform.OS === "web" && !enableScrollView) {
+  if (Platform.OS === "web" && !inModal) {
     return (
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={[withRadius && styles.radius]}>
         <div
           style={styles.webContainer}
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
@@ -47,18 +49,23 @@ export function RenderHTML({
   return (
     <WebView
       source={{ html: sanitizedHtml }}
+      containerStyle={[withRadius && styles.radius]}
       style={{ flex: 1 }}
+      scalesPageToFit={false}
       originWhitelist={["*"]}
+      nestedScrollEnabled
     />
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    marginBottom: 14,
+  radius: {
+    borderBottomRightRadius: 7,
+    borderBottomLeftRadius: 7,
   },
   webContainer: {
     width: "100%",
     height: "100%",
+    padding: 8,
   },
 });
