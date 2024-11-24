@@ -6,13 +6,14 @@ import { Id } from "@/convex/_generated/dataModel";
 import { usePaginatedQuery } from "convex/react";
 import { FunctionReturnType } from "convex/server";
 import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
+  LayoutChangeEvent,
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import Collapsible from "react-native-collapsible";
@@ -24,14 +25,18 @@ const Item = ({
 }: {
   data: FunctionReturnType<typeof api.collection.paginate>["page"][0];
 }) => {
-  const dimensions = useWindowDimensions();
+  const dimensions = Dimensions.get("window");
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [itemHeaderHeight, setItemHeaderHeight] = useState(0);
+  const handleItemHeaderLayout = useCallback((event: LayoutChangeEvent) => {
+    setItemHeaderHeight(event.nativeEvent.layout.height);
+  }, []);
 
-  console.log(dimensions);
   return (
     <ThemedView style={[styles.emailContainer]}>
       <ThemedView
         style={[styles.emailHeader, isCollapsed && styles.emailHeaderNoBorder]}
+        onLayout={handleItemHeaderLayout}
       >
         <ThemedView style={{ flex: 1 }}>
           <ThemedText style={styles.emailSubject}>{data.subject}</ThemedText>
@@ -61,16 +66,14 @@ const Item = ({
         </View>
       )}
 
-      <Collapsible
-        collapsed={isCollapsed}
-        style={[
-          {
-            height: dimensions.height - 200,
-          },
-          styles.emailHeaderNoBorder,
-        ]}
-      >
-        <RenderHTML body={data.htmlBody} />
+      <Collapsible collapsed={isCollapsed} style={styles.emailHeaderNoBorder}>
+        <ThemedView
+          style={{
+            height: dimensions.height - itemHeaderHeight - 86,
+          }}
+        >
+          <RenderHTML body={data.htmlBody} />
+        </ThemedView>
       </Collapsible>
     </ThemedView>
   );
@@ -144,7 +147,6 @@ const styles = StyleSheet.create({
   emailSubject: {
     fontSize: 18,
     fontWeight: "600",
-
     flexWrap: "wrap", // Allow wrapping
     flex: 1,
   },
